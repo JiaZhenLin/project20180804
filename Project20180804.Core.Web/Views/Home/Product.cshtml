@@ -1,0 +1,58 @@
+﻿
+@{
+    ViewData["Title"] = "Product";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@section Style{
+    <style>
+        body {
+            background: #F5F5F5;
+        }
+    </style>
+}
+<div style="height:40px;background:#FFF;line-height:2.3;position:fixed;font-size:18px;width:100%;z-index:99">
+    <div style="margin:auto;width:100%;text-align:center;position:absolute">
+        @ViewBag.Category.Title
+
+    </div>
+    <div style="float:left;position:absolute;cursor:pointer;padding-left:10px;z-index:100" id="back"><i class="layui-icon layui-icon-left"></i>返回</div>
+</div>
+<div style="margin:auto;width:95%;padding-top:30px">
+    @if (ViewBag.Products.Count == 0)
+    {
+        <div style="text-align:center;font-size:15px;padding-top:30px">暂无该类产品</div>
+
+    }
+    @for (var i = 0; i < ViewBag.Products.Count; i++)
+    {
+        var products = (Project20180804.Core.DTO.ProductDtos.ProductDTO)ViewBag.Products[i];
+
+        if (i % 2 == 0)
+        {
+            @:<div class="layui-row layui-col-space10" style="margin-top:15px">
+            }
+            @:<div class="layui-col-xs6" style="text-align:center;height:230px;line-height:1.5;overflow:hidden;cursor:pointer" data-id="@products.ID">
+                @:<div style="background:#FFF;border-radius:8px;">
+                    @:<div style="background-image:url('@products.PosterUrl');background-repeat: no-repeat;background-size: 100% 100%;height:200px"></div>
+                    @:<h3>@products.Title</h3>
+                @:</div>
+            @:</div>
+            if (i % 2 == 1 || i == ViewBag.Products.Count)
+            {
+
+            @:</div>
+        }
+
+    }
+</div>
+@section Scripts{
+    <script>
+        $('body').on('click', '.layui-col-xs6', function () {
+            var productId = $(this).attr('data-id');
+            window.location.href = 'GetProductByIdAsync?productId=' + productId;
+        });
+        $('body').on('click', '#back', function () {
+            window.location.href = document.location.protocol + '//' + document.location.host + '/Home/Index';
+        });
+    </script>
+}

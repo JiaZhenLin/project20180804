@@ -1,0 +1,44 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+<div class="layui-container">
+    <div class="layui-row">
+        <div class="layui-col-xs12">
+            <video id="video" style="width:100%;height:200px;object-fit: fill;border-radius:15px" webkit-playsinline playsinline controls>
+                <source src="@ViewBag.VideoUrl">
+            </video>
+        </div>
+    </div>
+    <div style="margin-top:10px;">
+        @for (var i = 0; i < ViewBag.Categorys.Count; i++)
+        {
+            var category = (Project20180804.Core.DTO.CategoryDtos.CategoryDTO)ViewBag.Categorys[i];
+
+            if (i % 4 == 0)
+            {
+                @:<div class="layui-row" style="margin-top:15px">
+                }
+                @:<div class="layui-col-xs3" style="text-align:center;line-height:1.5" data-id="@category.ID">
+                    @:<img src="@category.AttachmentUrl" style="width:50px; height:50px; border-radius:50%; overflow:hidden;" />
+                    @:<div>@category.Title</div>
+                @:</div>
+                if (i % 4 == 3 || i == ViewBag.Categorys.Count)
+                {
+
+                @:</div>
+            }
+
+        }
+    </div>
+</div>
+@section Scripts{
+    <script>
+        $('body').on('click', '.layui-col-xs3', function () {
+            var categoryId = $(this).attr('data-id');
+            window.location.href = document.location.protocol + '//' + document.location.host + '/Home/GetProductsByCategoryAsync?categoryId=' + categoryId;
+        })
+        $(function () { 
+            document.getElementById('video').play()
+        })
+    </script>
+}

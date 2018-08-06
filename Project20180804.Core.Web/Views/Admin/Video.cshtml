@@ -1,0 +1,59 @@
+﻿@{
+    ViewData["Title"] = "Vedio";
+    Layout = "~/Views/Shared/_MainLayout.cshtml";
+}
+
+<button id="fileSelect" class="layui-btn  layui-btn-lg" style="margin-bottom:10px;" >更新视频</button>
+<video style="width:100%;height:500px;object-fit: fill" controls>
+    <source src="@ViewBag.VideoUrl">
+</video>
+@section scripts{
+    <script>
+        layui.use(['layer'], function () {
+            var layer = layui.layer;
+            $('body').on('click', '#fileSelect', function () {
+                var fileInput = $('<input type="file" hidden/>');
+                $('body').append(fileInput);
+                fileInput.change(function (e) {
+                    var file = this.files[0];
+                    $.ajax({
+                        url: '../QiNiu/GetToken',
+                        data: { fileName: file.name },
+                        success: function (data) {
+                            var observable = qiniu.upload(file, data.fileName, data.token, {
+                                fname: file.name,
+                                params: {},
+                                mimeType: null
+                            }, {});
+                            var index = layer.load(1, {
+                                shade: [0.5, '#000'] //0.1透明度的白色背景
+                            });
+                            var subscription = observable.subscribe(function (res) {
+
+                            }, function (msg) {
+                                console.error(msg);
+                                fileInput.remove();
+                            }, function (res) {
+                                var attachmentUrl = qiNiuUrl + res.key;
+                                $.ajax({
+                                    url: 'AddVideoAsync',
+                                    data: { url: attachmentUrl },
+                                    success: function () { 
+                                        $('video').find('source').attr('src', attachmentUrl);
+                                        layer.close(index);
+                                    },
+                                    error: function () { 
+                                        layer.close(index);
+                                    }
+                                })
+                            });
+                            fileInput.remove();
+                        }
+                    });
+                })
+                fileInput.click();
+            });
+        })
+    </script>
+}
+

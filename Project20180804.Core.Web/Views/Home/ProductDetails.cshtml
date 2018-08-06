@@ -1,0 +1,42 @@
+﻿
+@{
+    ViewData["Title"] = "ProductDetails";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@section Style{
+    <style>
+        body {
+            background: #F5F5F5;
+        }
+    </style>
+}
+<div style="height:40px;background:#FFF;line-height:2.3;position:fixed;font-size:18px;width:100%;z-index:99">
+    <div style="margin:auto;width:100%;text-align:center;position:absolute">
+        @ViewBag.Product.Title
+
+    </div>
+    <div style="float:left;position:absolute;cursor:pointer;padding-left:10px;z-index:100" id="back"><i class="layui-icon layui-icon-left"></i>返回</div>
+</div>
+
+<div style="margin:auto;width:95%;padding-top:40px">
+    @for (var i = 0; i < ViewBag.Product.AttachmentUrls.Count; i++)
+    {
+        var attachmentUrl = (string)ViewBag.Product.AttachmentUrls[i];
+
+        @:<div class="layui-row" style="margin-top:5px">
+            @:<div class="layui-col-xs12" style="text-align:center;overflow:hidden;">
+                @:<div style="background:#FFF;border-radius:3px;">
+                    @:<div style="background-image:url('@attachmentUrl');background-repeat: no-repeat;background-size: 100% 100%;height:400px;width:100%"></div>
+                @:</div>
+            @:</div>
+        @:</div>
+    }
+    <h3>@ViewBag.Product.Description</h3>
+</div>
+@section Scripts{
+    <script>
+        $('body').on('click', '#back', function () {
+            window.location.href = document.location.protocol + '//' + document.location.host +'/Home/GetProductsByCategoryAsync?categoryId=@ViewBag.Product.CategoryID';
+        });
+    </script>
+}

@@ -1,0 +1,264 @@
+﻿
+@{
+    ViewData["Title"] = "Product";
+    Layout = "~/Views/Shared/_MainLayout.cshtml";
+}
+@section css{ 
+    <style>
+        span {
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+    </style>
+}
+@section scripts{
+<script>
+        layui.use(['table','layer','form'],  function(){
+            var table = layui.table,layer = layui.layer,form = layui.form;;
+            var categorys = [];
+            $.ajax({
+                url:'GetAllCategorysAsync',
+                success:function(data){
+                    categorys = data.data;
+                }
+            })
+            table.render({
+                elem: '#table-product'
+                ,height: 'full-200'
+                ,url: 'GetAllProductsAsync' //数据接口
+                ,page: true //开启分页
+                ,cols: [[ //表头
+                  {field: 'title', title: '产品名称', width:'20%'}
+                  ,{field: 'description', title: '描述', width:'30%'}
+                  ,{field: 'categoryTitle', title: '类别', width:'30%'}
+                  ,{fixed: 'right', width:'20%', align:'center', toolbar: '#barTemp'}
+                ]]
+            });
+            table.on('tool(product)', function(obj){
+                var data = obj.data; //获得当前行数据
+                var layEvent = obj.event; //获得 lay-event 对应的值（也可以是表头的 event 参数对应的值）
+                var tr = obj.tr; //获得当前行 tr 的DOM对象
+
+                if(layEvent === 'detail'){ //查看
+                      var photos = {
+                          "title": "", //相册标题
+                          "id": 123, //相册id
+                          "start": 0, //初始显示的图片序号，默认0
+                          "data": [ ]  //相册包含的图片，数组格式
+                      };
+                      $.each(data.attachmentUrls,function(index,val){
+                          photos.data.push({
+                            "alt": "",
+                            "pid": index, //图片id
+                            "src": val, //原图地址
+                            "thumb": val //缩略图地址
+                          })
+                      });
+                      layer.photos({
+                        photos: photos
+                        ,anim: 5 //0-6的选择，指定弹出图片动画类型，默认随机（请注意，3.0之前的版本用shift参数）
+                    });
+                } else if(layEvent === 'del'){ //删除
+                layer.confirm('真的删除行么', function(index){
+                    //向服务端发送删除指令
+                    $.ajax({
+                        type:'POST',
+                        url:'DeleteProductAsync',
+                        data:{id:data.id},
+                        success:function(data){
+                            if(!data.isSuccessed){
+                                layer.msg(data.errorMsg);
+                            }else{
+                                obj.del(); //删除对应行（tr）的DOM结构，并更新缓存
+                                layer.close(index);
+                            }
+                        }
+                    })
+                });
+                } else if(layEvent === 'edit'){ //编辑
+                    //do something
+                    index = layer.open({
+                        title:'修改数据',
+                        area: ['500px', '560px'],
+                        type: 1,
+                        content: $('#addTemp').html(),
+                        success:function(layero,index){
+                            layero.find('#title').val(data.title);
+                            layero.find('#description').val(data.description);
+                             var select = layero.find('#category');
+                            $.each(categorys,function(index,val){
+                                select.append('<option value="'+val.id+'" >'+ val.title + '</option>')
+                            });
+                             layero.find('#submit').addClass('update').attr('data-id',data.id);
+                             form.render();
+                             select = $('.layui-anim-upbit dd[lay-value="' + data.categoryID + '"]');
+                            $('#category').siblings("div.layui-form-select").find('dl').find(select).click();
+                            $.each(data.attachmentUrls, function (index,val) {
+                                var html = ['<div>',
+                                    '<span class="attachmentUrl" style="width:200px;float:left">' + val + '</span>',
+                                    '<span style="float:right;cursor:pointer" class="imageDelete">删除</span>',
+                                    '<span style="float:right;margin-right:10px;cursor:pointer" class="imageView" data-url="' + val + '">预览</span>',
+                                    '</div>'].join('');
+                                $('#fileDomain').append(html);
+                            });
+                        },
+                    });
+
+                }
+            });
+            var index = 0;
+            $('#add').click(function(){
+                index = layer.open({
+                        title:'添加数据',
+                        area: ['500px', '560px'],
+                         type: 1,
+                        content: $('#addTemp').html(),
+                        success:function(layero){
+                            var select = layero.find('#category');
+                            $.each(categorys,function(index,val){
+                                select.append('<option value="'+val.id+'">'+ val.title + '</option>')
+                            });
+                            form.render();
+                        }
+                });
+            });
+            $('body').on('click', '#fileSelect', function () {
+                var fileInput = $('<input type="file" hidden/>');
+                $('body').append(fileInput);
+                fileInput.change(function (e) {
+                    var file = this.files[0];
+                    $.ajax({
+                        url: '../QiNiu/GetToken',
+                        data: { fileName: file.name },
+                        success: function (data) {
+                            var observable = qiniu.upload(file, data.fileName, data.token, {
+                                fname: file.name,
+                                params: {},
+                                mimeType: null
+                            }, {});
+                            var subscription = observable.subscribe(function (res) {
+
+                            }, function (msg) {
+                                console.error(msg);
+                                fileInput.remove();
+                            }, function (res) {
+                                var attachmentUrl = qiNiuUrl + res.key;
+                                var html = ['<div>',
+                                    '<span class="attachmentUrl" style="width:200px;float:left">' + attachmentUrl + '</span>',
+                                    '<span style="float:right;cursor:pointer" class="imageDelete">删除</span>',
+                                    '<span style="float:right;margin-right:10px;cursor:pointer" class="imageView" data-url="' + attachmentUrl + '">预览</span>',
+                                    '</div>'].join('');
+                                $('#fileDomain').append(html);
+                            });
+                            fileInput.remove();
+                        }
+                    });
+                })
+                fileInput.click();
+            });
+            $('body').on('click','#submit',function(){
+                var url = 'AddProductAsync',id = undefined;
+                var that = $(this);
+                if(that.hasClass('update')){
+                    url = 'UpdateProductAsync';
+                    that.data('isUpdate','false');
+                    id = that.attr('data-id');
+                }
+                var title = $('#title').val(),description = $('#description').val();
+                var categoryId = $('.layui-anim-upbit .layui-this').attr('lay-value');
+                if(!categoryId || !title || !description){
+                    layer.msg('请完善资料', {icon: 2});
+                }
+                var attachmentUrls = [];
+                $.each($('.attachmentUrl'),function(index,val){
+                    attachmentUrls.push($(val).text());
+                });
+                
+                $.ajax({
+                    type:'POST',
+                    url:url,
+                    data:{title:title,description:description,categoryId:categoryId,attachmentUrls:attachmentUrls,id:id},
+                    success:function(data){
+                        if(data.isSuccessed){
+                            table.reload("table-product");
+                            layer.close(index);
+                        }else{
+                            layer.msg(data.errorMsg);
+                        }
+                    }
+                });
+                return false;
+            });
+            $('body').on('click', '.imageView', function () {
+                var url = $(this).attr('data-url')
+                layer.photos({
+                    photos: {
+                        data: [{
+                            "alt": "大图模式",
+                            "src": url
+                        }]
+                    }
+                    , shade: 0.7
+                    , closeBtn: 0
+                    , anim: 1
+                    , resize: false
+                    , success: function (layero, index) {
+                    }
+                });
+            });
+            $('body').on('click', '.imageDelete', function () {
+                $(this).parent().remove();
+            });
+        });
+</script>
+    <script type="text/html" id="barTemp">
+        <a class="layui-btn layui-btn-xs" lay-event="detail">查看预览图</a>
+        <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+    </script>
+    <script type="text/html" id="addTemp">
+        <form class="layui-form" action="" style="margin:20px auto auto auto;width:80%">
+            <div class="layui-form-item">
+                <label class="layui-form-label">标题</label>
+                <div class="layui-input-block">
+                    <input id="title" type="text" name="title" required lay-verify="required" placeholder="请输入标题" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">描述</label>
+                <div class="layui-input-block">
+                    <textarea id="description" name="desc" placeholder="请输入内容" class="layui-textarea"></textarea>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">选择类别</label>
+                <div class="layui-input-block">
+                    <select id="category" name="city" lay-verify="">
+                        <option value="">请选择一个类别</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">图片上传</label>
+                <div class="layui-input-inline">
+                    <button type="button" class="layui-btn" id="fileSelect">
+                        <i class="layui-icon">&#xe67c;</i>上传图片
+                    </button>
+                </div>
+                <div style="height:150px;padding-left:110px;line-height:1.8;clear:both;padding-top:15px;" id="fileDomain">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn" lay-submit lay-filter="formDemo" id="submit">立即提交</button>
+                    <button class="layui-btn layui-btn-primary">取消</button>
+                </div>
+            </div>
+        </form>
+    </script>
+}
+
+<button id="add" class="layui-btn  layui-btn-lg" style="margin-bottom:10px;">新增产品</button>
+<table id="table-product" lay-filter="product"></table>

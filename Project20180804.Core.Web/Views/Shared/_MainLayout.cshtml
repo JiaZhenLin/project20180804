@@ -1,0 +1,39 @@
+﻿<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewData["Title"]</title>
+    <link href="~/css/layui.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src="https://unpkg.com/qiniu-js@2.4.0/dist/qiniu.min.js"></script>
+    <script src="~/layui.all.js"></script>
+    @RenderSection("css", required: false)
+</head>
+<body>
+    <div style="background:#393D49">
+        <ul class="layui-nav" style="margin:auto auto auto auto;width:80%">
+            <li id="nav-vedio" class="layui-nav-item"><a href="Vedio">视频管理</a></li>
+            <li id="nav-category" class="layui-nav-item"><a href="Category">类别管理</a></li>
+            <li id="nav-product" class="layui-nav-item"><a href="Product">产品管理</a></li>
+        </ul>
+    </div>
+    <div class="container body-content" style="margin:20px auto 10px auto;width:80%">
+        @RenderBody()
+    </div>
+    <script>
+        var qiNiuUrl = 'http://pcz1s3gfl.bkt.clouddn.com/';
+        layui.use('element', function(){
+            var element = layui.element; //导航的hover效果、二级菜单等功能，需要依赖element模块
+        if(window.location.href.indexOf("Vedio") > -1){
+            $('#nav-vedio').addClass('layui-this');
+        }else if (window.location.href.indexOf("Category") > -1){
+        $('#nav-category').addClass('layui-this');
+        }else if(window.location.href.indexOf("Product") > -1){
+        $('#nav-product').addClass('layui-this');
+        }
+    });
+    </script>
+    @RenderSection("scripts", required: false)
+</body>
+</html>
