@@ -35,5 +35,18 @@ namespace Project20180804.Core.Web.Controllers
                 FileName = newFileName
             });
         }
+
+        public IActionResult GetToken()
+        {
+            Mac mac = new Mac(_appSetting.Value.QiNiuSetting.AccessKey, _appSetting.Value.QiNiuSetting.SecretKey);
+            PutPolicy putPolicy = new PutPolicy
+            {
+                //存储名称
+                Scope = _appSetting.Value.QiNiuSetting.Bucket
+            };
+            putPolicy.SetExpires(3600);
+            string token = Auth.CreateUploadToken(mac, putPolicy.ToJsonString());
+            return Ok(token);
+        }
     }
 }
